@@ -71,12 +71,16 @@ void CostmapNode::rayTrace(int x1, int y1) { // Bresenham's line algorithm (ray 
 
   while (true) {
     
-    // until we reach the edge or a known cost
-    if ((x0 == x1 && y0 == y1) || inflated_array[x0][y0] > 0){
+    // if reach known cost, break before editing, if reach edge, edit edge then break
+    if (inflated_array[x0][y0] > 0){
       break;
     }
     // Mark the traversed cell as free space (0)
     inflated_array[x0][y0] = 0;
+
+    if(x0 == x1 && y0 == y1){
+      break;
+    }
     
     int e2 = 2 * err;
     if (e2 > -dy) { 
@@ -139,12 +143,12 @@ void CostmapNode::laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr sca
   // // Step 3: Inflate obstacles
   inflateObstacles();
 
-    // for(int i = 0; i < 200; ++i){
-  rayTrace(0, 0); // ray trace the edges
-  //   rayTrace(i, 199);
-  //   rayTrace(0, i);
-  //   rayTrace(199, i);
-  // }
+  for(int i = 0; i < 200; ++i){
+    rayTrace(i, 0); // ray trace the edges
+    rayTrace(i, 199);
+    rayTrace(0, i);
+    rayTrace(199, i);
+  }
 
   // // Step 4: Publish costmap
   publishCostmap();
