@@ -22,11 +22,11 @@ class CostmapNode : public rclcpp::Node {
   private:
     robot::CostmapCore costmap_;
     // Place these constructs here
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr string_pub_;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_pub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
     //rclcpp::TimerBase::SharedPtr timer_;
-    double array[200][200]; // resolution of 0.05m, 10m x 10m
-    double inflated_array[200][200];
+    double array[200][200]; // resolution of 0.1m, 20m x 20m
+    int8_t inflated_array[200][200];
 };
  
 #endif 
