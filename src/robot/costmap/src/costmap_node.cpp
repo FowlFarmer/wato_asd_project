@@ -11,15 +11,7 @@ CostmapNode::CostmapNode() : Node("costmap"), costmap_(robot::CostmapCore(this->
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
     "/lidar", 10, std::bind(&CostmapNode::laserCallback, this, std::placeholders::_1));
 }
- 
-// Define the timer to publish a message every 500ms (from test )
-// void CostmapNode::publishMessage() {
-//   auto message = std_msgs::msg::String();
-//   message.data = "Hello, ROS 2!";
-//   RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-//   string_pub_->publish(message);
-// }
- 
+
 
 void CostmapNode::initializeCostmap(){
   for (int i = 0; i < 200; ++i) {
