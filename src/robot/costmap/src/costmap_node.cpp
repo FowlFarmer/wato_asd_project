@@ -25,7 +25,7 @@ void CostmapNode::initializeCostmap(){
   for (int i = 0; i < 200; ++i) {
     for (int j = 0; j < 200; ++j) {
       array[i][j] = 0;
-      inflated_array[i][j] = 0;
+      inflated_array[i][j] = -1;
     }
   }
   //RCLCPP_INFO(this->get_logger(), "Costmap initialized");
@@ -60,7 +60,7 @@ void CostmapNode::publishCostmap(){
   costmap_pub_->publish(message);
 }
 
-void CostmapNode::inflateObstacles(){ 
+void CostmapNode::inflateObstacles(){ // also defines known and unknown space
   for (int i = 0; i < 200; ++i) {
     for (int j = 0; j < 200; ++j) {
       if (array[i][j] == 1) {
@@ -71,9 +71,30 @@ void CostmapNode::inflateObstacles(){
               k < 200 && 
               l >= 0 && 
               l < 200 &&
-              euclidean_distance <=1) // first improvement: costmap should be ints between 100-0, not floats from 1-0
-               {
+              euclidean_distance <=1) 
+              // first improvement: costmap should be ints between 100-0, not floats from 1-0
+              {
               inflated_array[k][l] = (int)100*(1-euclidean_distance) > inflated_array[k][l] ? (int)100*(1-euclidean_distance) : inflated_array[k][l];
+              int x0 = k;
+              int y0 = l;
+              int dx = abs(100 - x0);
+              int dy = abs(100 - y0);
+              int sx = (x0 < 100) ? 1 : -1;
+              int sy = (y0 < 100) ? 1 : -1;
+              int err = dx - dy;
+
+              while (true) { // Bresenham's line algorithm (ray tracing)
+                  // Mark the traversed cell as free space (0)
+                  if(inflated_array[x0][y0] == -1){
+                    inflated_array[x0][y0] = 0;
+                  }
+
+                  if (x0 == 100 && y0 == 100) break;
+                  
+                  int e2 = 2 * err;
+                  if (e2 > -dy) { err -= dy; x0 += sx; }
+                  if (e2 < dx) { err += dx; y0 += sy; }
+              }
             }
           }
         }
