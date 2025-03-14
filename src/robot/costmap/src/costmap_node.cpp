@@ -60,6 +60,36 @@ void CostmapNode::publishCostmap(){
   costmap_pub_->publish(message);
 }
 
+void CostmapNode::rayTrace(int x1, int y1) { // Bresenham's line algorithm (ray trace)
+  int x0 = 100;
+  int y0 = 100;
+  int dx = abs(x1 - x0);
+  int dy = abs(y1 - y0);
+  int sx = (x0 < x1) ? 1 : -1;
+  int sy = (y0 < y1) ? 1 : -1;
+  int err = dx - dy;
+
+  while (true) {
+    
+    // until we reach the edge or a known cost
+    if ((x0 == x1 && y0 == y1) || inflated_array[x0][y0] > 0){
+      break;
+    }
+    // Mark the traversed cell as free space (0)
+    inflated_array[x0][y0] = 0;
+    
+    int e2 = 2 * err;
+    if (e2 > -dy) { 
+      err -= dy; 
+      x0 += sx; 
+    }
+    if (e2 < dx) { 
+      err += dx; 
+      y0 += sy; 
+    }
+  }
+}
+
 void CostmapNode::inflateObstacles(){ // also defines known and unknown space
   for (int i = 0; i < 200; ++i) {
     for (int j = 0; j < 200; ++j) {
@@ -75,26 +105,6 @@ void CostmapNode::inflateObstacles(){ // also defines known and unknown space
               // first improvement: costmap should be ints between 100-0, not floats from 1-0
               {
               inflated_array[k][l] = (int)100*(1-euclidean_distance) > inflated_array[k][l] ? (int)100*(1-euclidean_distance) : inflated_array[k][l];
-              int x0 = k;
-              int y0 = l;
-              int dx = abs(100 - x0);
-              int dy = abs(100 - y0);
-              int sx = (x0 < 100) ? 1 : -1;
-              int sy = (y0 < 100) ? 1 : -1;
-              int err = dx - dy;
-
-              while (true) { // Bresenham's line algorithm (ray tracing)
-                  // Mark the traversed cell as free space (0)
-                  if(inflated_array[x0][y0] == -1){
-                    inflated_array[x0][y0] = 0;
-                  }
-
-                  if (x0 == 100 && y0 == 100) break;
-                  
-                  int e2 = 2 * err;
-                  if (e2 > -dy) { err -= dy; x0 += sx; }
-                  if (e2 < dx) { err += dx; y0 += sy; }
-              }
             }
           }
         }
@@ -128,6 +138,14 @@ void CostmapNode::laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr sca
 
   // // Step 3: Inflate obstacles
   inflateObstacles();
+
+    // for(int i = 0; i < 200; ++i){
+  rayTrace(0, 0); // ray trace the edges
+  //   rayTrace(i, 199);
+  //   rayTrace(0, i);
+  //   rayTrace(199, i);
+  // }
+
   // // Step 4: Publish costmap
   publishCostmap();
 }

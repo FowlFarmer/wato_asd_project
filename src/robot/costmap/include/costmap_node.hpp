@@ -18,7 +18,8 @@ class CostmapNode : public rclcpp::Node {
     void laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan);
     void inflateObstacles();
     void initializeCostmap();
-
+    void rayTrace(int x1, int y1);
+    
   private:
     robot::CostmapCore costmap_;
     // Place these constructs here
