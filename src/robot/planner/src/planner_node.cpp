@@ -85,7 +85,8 @@ void PlannerNode::planPath() {
 
   CellIndex start = worldToGrid(robot_pose_.position.x, robot_pose_.position.y, current_map_);
   CellIndex goal = worldToGrid(goal_.point.x, goal_.point.y, current_map_);
-  if(current_map_.data[goal.y * current_map_.info.width + goal.x] >0){
+  RCLCPP_INFO(this->get_logger(), "Planning goal at %d %d with cost %d", goal.x, goal.y, current_map_.data[goal.y * current_map_.info.width + goal.x]);
+  if(current_map_.data[goal.y * current_map_.info.width + goal.x] > 0){
     RCLCPP_WARN(this->get_logger(), "Invalid goal, too close to obstacle");
     return;
   }
@@ -119,7 +120,27 @@ void PlannerNode::planPath() {
             came_from[neighbor] = current;
             g_score[neighbor] = tentative_g_score;
             int c_score = 1000*current_map_.data[neighbor.y * current_map_.info.width + neighbor.x]; // cost of going through high risk areas
-            f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, goal) + c_score;
+            double radius = 1; // radius in meters to clear costmap areas
+            int cells_radius = static_cast<int>(radius / current_map_.info.resolution);
+            double p_score = 0; // proximity cost to the closest obstacle
+            for (int dx = -cells_radius; dx <= cells_radius; ++dx) {
+                for (int dy = -cells_radius; dy <= cells_radius; ++dy) {
+                    int nx = neighbor.x + dx;
+                    int ny = neighbor.y + dy;
+
+                    if (nx < 0 || nx >= static_cast<int>(current_map_.info.width) ||
+                        ny < 0 || ny >= static_cast<int>(current_map_.info.height)) {
+                        continue;
+                    }
+
+                    double distance = std::sqrt(dx * dx + dy * dy) * current_map_.info.resolution;
+                    if (distance <= radius) {
+                        int map_index = ny * current_map_.info.width + nx;
+                        p_score += current_map_.data[map_index];
+                    }
+                }
+            }
+            f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, goal) + c_score + p_score;
 
             open_set.emplace(neighbor, f_score[neighbor]);
         }
@@ -156,34 +177,9 @@ bool PlannerNode::isValid(const CellIndex &index, const nav_msgs::msg::Occupancy
       index.y < 0 || index.y >= static_cast<int>(map.info.height)) {
       return false;
   }
-  int map_index = index.y * map.info.width + index.x;
+  //int map_index = index.y * map.info.width + index.x;
   return true;
-  //return map.data[map_index] <= 50; // 0 indicates free space. if -1 unknown, still plan through it
-
-  // double radius = 0.7; // radius in meters
-  // int cells_radius = static_cast<int>(radius / map.info.resolution);
-
-  // for (int dx = -cells_radius; dx <= cells_radius; ++dx) {
-  //     for (int dy = -cells_radius; dy <= cells_radius; ++dy) {
-  //         int nx = index.x + dx;
-  //         int ny = index.y + dy;
-
-  //         if (nx < 0 || nx >= static_cast<int>(map.info.width) ||
-  //             ny < 0 || ny >= static_cast<int>(map.info.height)) {
-  //             continue;
-  //         }
-
-  //         double distance = std::sqrt(dx * dx + dy * dy) * map.info.resolution;
-  //         if (distance <= radius) {
-  //             int map_index = ny * map.info.width + nx;
-  //             if (map.data[map_index] > 0) { // Occupied cell
-  //                 return false;
-  //             }
-  //         }
-  //     }
-  // }
-
-  // return true;
+  //return map.data[map_index] <= 0; // 0 indicates free space. if -1 unknown, still plan through it
 }
 
 void PlannerNode::reconstructPath(const std::unordered_map<CellIndex, CellIndex, CellIndexHash> &came_from,

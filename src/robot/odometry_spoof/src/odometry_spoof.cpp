@@ -12,9 +12,9 @@ OdometrySpoofNode::OdometrySpoofNode() : Node("odometry_spoof") {
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Create a timer to fetch transform & publish odometry at ~10 Hz
+  // Create a timer to fetch transform & publish odometry at ~10 Hz INCREASE to 50
   timer_ = this->create_wall_timer(
-    std::chrono::milliseconds(100),
+    std::chrono::milliseconds(20),
     std::bind(&OdometrySpoofNode::timerCallback, this)
   );
 }

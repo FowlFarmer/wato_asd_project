@@ -27,7 +27,7 @@ class MapMemoryNode : public rclcpp::Node {
     rclcpp::TimerBase::SharedPtr timer_;
 
     nav_msgs::msg::OccupancyGrid global_map_;
-    double last_x, last_y, last_yaw;
+    double last_x, last_y, last_yaw = 0;
     
     nav_msgs::msg::OccupancyGrid latest_costmap_;
     bool timer_threshold_passed = true;

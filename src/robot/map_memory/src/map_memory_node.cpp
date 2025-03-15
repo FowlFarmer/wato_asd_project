@@ -19,20 +19,22 @@ MapMemoryNode::MapMemoryNode() : Node("map_memory"), map_memory_(robot::MapMemor
       std::chrono::milliseconds(500), std::bind(&MapMemoryNode::updateMap, this));
 
   global_map_.header.frame_id = "sim_world";
-  global_map_.info.resolution = 0.1;
-  global_map_.info.width = 300;
-  global_map_.info.height = 300;
+  global_map_.info.resolution = 0.2; // global map larger resolution than costmap
+  global_map_.info.width = 150;
+  global_map_.info.height = 150;
   global_map_.info.origin.position.x = -15.0;
   global_map_.info.origin.position.y = -15.0;
   global_map_.info.origin.position.z = 0.0;
   global_map_.info.origin.orientation.w = 1.0;
-  global_map_.data.resize(300 * 300, -1);
+  global_map_.data.resize(150 * 150, -1);
   global_map_.header.stamp = this->now();
+  
   last_x = 0.0;
   last_y = 0.0;
-  for(int i = 0; i < 300*300; ++i){
+  for(int i = 0; i < 150*150; ++i){
     global_map_.data[i] = -1;
   }
+  map_pub_->publish(global_map_); // initially publish empty map
 }
 
 void MapMemoryNode::costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
@@ -97,22 +99,24 @@ void MapMemoryNode::integrateCostmap() {
         double global_y = robot_y + cell_x * sin(robot_yaw) + cell_y * cos(robot_yaw);
 
         // Convert global frame coordinates to global map cell coordinates
-        int global_cell_x = (global_x - global_map_.info.origin.position.x) / global_map_.info.resolution;
-        int global_cell_y = (global_y - global_map_.info.origin.position.y) / global_map_.info.resolution;
+        int global_cell_x = (int)((global_x - global_map_.info.origin.position.x) / global_map_.info.resolution);
+        int global_cell_y = (int)((global_y - global_map_.info.origin.position.y) / global_map_.info.resolution);
 
-        // Update the global map with the transformed cost, because we did some transformations inflate with 1 radius.
         if (global_cell_x >= 0 && global_cell_x < global_map_.info.width &&
-            global_cell_y >= 0 && global_cell_y < global_map_.info.height) {
+          global_cell_y >= 0 && global_cell_y < global_map_.info.height) {
+          
+          global_map_.data[global_cell_y * global_map_.info.width + global_cell_x] = cost;
 
-          for(int i = -1; i < 2; ++i){
-            for(int j = -1; j < 2; ++j){
-              if(global_cell_x + i >= 0 && global_cell_x + i < global_map_.info.width &&
-                 global_cell_y + j >= 0 && global_cell_y + j < global_map_.info.height){
-                   global_map_.data[(global_cell_y+j) * global_map_.info.width + global_cell_x+i] = cost;
+          // Update the global map with the transformed cost, because we did some transformations inflate with 1 radius.
+          // for(int i = -1; i < 2; ++i){
+          //   for(int j = -1; j < 2; ++j){
+          //     if(global_cell_x + i >= 0 && global_cell_x + i < global_map_.info.width &&
+          //        global_cell_y + j >= 0 && global_cell_y + j < global_map_.info.height){
+          //          global_map_.data[(global_cell_y+j) * global_map_.info.width + global_cell_x+i] = cost;
 
-                 }
-            }
-          }
+          //        }
+          //   }
+          // }
         }
       }
     }
